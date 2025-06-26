@@ -60,7 +60,6 @@ class _RegisterPageState extends State<RegisterPage> {
     latitude = pos.latitude;
     longitude = pos.longitude;
 
-    // ✅ Reverse geocode to human-readable location
     try {
       List<Placemark> placemarks = await placemarkFromCoordinates(
         latitude!,
@@ -79,38 +78,104 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   void _submitForm() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => isLoading = true);
+    if (!_formKey.currentState!.validate()) {
+      print("[❌] Form validation failed");
+      return;
+    }
 
-      try {
-        final response = await Dio().post(
-          ApiEndpoints.baseUrl + ApiEndpoints.requestOtp,
-          data: {"email": _emailController.text.trim()},
-          options: Options(
-            sendTimeout: ApiEndpoints.connectionTimeout,
-            receiveTimeout: ApiEndpoints.receiveTimeout,
+    if (latitude == null || longitude == null) {
+      print("[📍] Trying to get current location...");
+      await _getCurrentLocation();
+      if (latitude == null || longitude == null) {
+        print("[❌] Location not detected");
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Location not detected."),
+            duration: Duration(seconds: 5),
+          ),
+        );
+        return;
+      }
+    }
+
+    setState(() => isLoading = true);
+
+    final payload = {"email": _emailController.text.trim()};
+
+    print("[🚀] Submitting form with payload: $payload");
+    print("[🌐] Endpoint: ${ApiEndpoints.baseUrl + ApiEndpoints.requestOtp}");
+    print(
+      "[⏱️] Timeouts: send=${ApiEndpoints.connectionTimeout.inMilliseconds}ms, receive=${ApiEndpoints.receiveTimeout.inMilliseconds}ms",
+    );
+
+    try {
+      final response = await Dio().post(
+        ApiEndpoints.baseUrl + ApiEndpoints.requestOtp,
+        data: payload,
+        options: Options(
+          sendTimeout: ApiEndpoints.connectionTimeout,
+          receiveTimeout: ApiEndpoints.receiveTimeout,
+        ),
+      );
+
+      print("[✅] Response Status: ${response.statusCode}");
+      print("[📦] Response Data: ${response.data}");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        setState(() => isLoading = false);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("OTP sent to your email. Please verify."),
+            duration: Duration(seconds: 2),
           ),
         );
 
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("OTP sent to your email. Please verify."),
-            ),
-          );
-          // Move to OTP page or pass form data to next step
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Error: ${response.data['error']}")),
-          );
-        }
-      } catch (e) {
-        ScaffoldMessenger.of(
+        Navigator.pushNamed(
           context,
-        ).showSnackBar(SnackBar(content: Text("Request failed: $e")));
+          '/otp',
+          arguments: {
+            'full_name': _nameController.text.trim(),
+            'email': _emailController.text.trim(),
+            'phone': _phoneController.text.trim(),
+            'location': _locationController.text.trim(),
+            'latitude': latitude,
+            'longitude': longitude,
+            'password': _passwordController.text.trim(),
+          },
+        );
+      } else {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Error: ${response.data['error'] ?? 'Unknown error'}",
+            ),
+            duration: Duration(seconds: 5),
+          ),
+        );
       }
-
+    } on DioException catch (e) {
       setState(() => isLoading = false);
+      print("[🔥] DioException: $e");
+      print("[📦] Dio Error Data: ${e.response?.data}");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "Dio Error: ${e.response?.data?['error'] ?? e.message}",
+          ),
+          duration: Duration(seconds: 5),
+        ),
+      );
+    } catch (e) {
+      setState(() => isLoading = false);
+      print("[💥] Unknown Exception: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Unexpected Error: $e"),
+          duration: Duration(seconds: 5),
+        ),
+      );
     }
   }
 
@@ -127,13 +192,9 @@ class _RegisterPageState extends State<RegisterPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 20),
-                Text(
-                  'फोहोर मलाई',
-                  style: GoogleFonts.notoSansDevanagari(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green[800],
-                  ),
+                Image.asset(
+                  'assets/images/logo.png', // Update path if needed
+                  height: 100,
                 ),
                 const SizedBox(height: 4),
                 const Text(
