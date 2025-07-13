@@ -93,7 +93,7 @@ Fohormalai is a smart waste management system designed to streamline waste colle
 ### Admin Panel
 1. Clone the repository:
    ```bash
-   git clone <https://github.com/0-nikesh/fohormalai_admin>
+   git clone https://github.com/0-nikesh/fohormalai_admin
    cd fohormalai-admin
    ```
 2. Install dependencies:
