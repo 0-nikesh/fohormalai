@@ -114,11 +114,18 @@ fohormalai/
 ├── assets/                 # Fonts, icons, and images
 ├── ios/                    # iOS-specific files
 ├── lib/                    # Main application code
-│   ├── app/                # Models, services, and providers
+│   ├── app/
+|   |   |── models/         # Every Feature Model
+|   |   |── providers/      # Providers
+|   |   |── services/       # Services
+|   |   |── apiendpoints                  
 │   ├── features/           # Feature-specific modules
 │   │   ├── auth/           # Authentication screens
 │   │   ├── collection/     # Waste collection screens
-│   │   ├── marketplace/    # Marketplace screens
+|   |   ├── dashboard/      # Screens
+|   |   ├── map/            # Map Integration
+│   │   ├── notification/   # Notifications
+|   ├── profile/        # User Profile
 │   │   ├── splash/         # Splash screen
 │   └── main.dart           # Application entry point
 ├── test/                   # Unit and widget tests
